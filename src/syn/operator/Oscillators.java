@@ -1,28 +1,105 @@
 package syn.operator;
 
+import utils.Utils;
+
 public class Oscillators {
 	public final static Oscillator Sine;
 	public final static Oscillator Triangle;
-	public final static Oscillator Saw;
+	public final static Oscillator SawTooth;
+	public final static Oscillator SawToothInverted;
 	public final static Oscillator Flat;
 	public final static Oscillator Noise;
+	public final static Oscillator ConstZero;
 
 	static {
-		Sine = (phase) -> {
-			return Math.sin(phase);
+		Sine = new Oscillator() {
+			@Override
+			public String toString() {
+				return "Sine";
+			}
+
+			@Override
+			public double getSampleValue(double phase) {
+				return Math.sin(phase);
+			}
 		};
 
-		Triangle = Sine;
-		Saw = Sine;
+		Triangle = new Oscillator() {
+			@Override
+			public String toString() {
+				return "Triangle";
+			}
 
-		Flat = (phase) -> {
-			return Math.signum(Sine.getSampleValue(phase));
+			@Override
+			public double getSampleValue(double phase) {
+				phase = getNormalizedPhase(phase + Utils.halfPi);
+				double result = - 1 + phase / Utils.halfPi;
+
+				if (phase < Math.PI)
+					return result;
+				else
+					return 2 - result;
+			}
 		};
 
-		Noise = (phase) -> {
-			return Math.random() * 2 - 1;
+		SawTooth = new Oscillator() {
+			@Override
+			public String toString() {
+				return "SawTooth";
+			}
+
+			@Override
+			public double getSampleValue(double phase) {
+				phase = getNormalizedPhase(phase + Utils.halfPi);
+				return - 1 + phase / Math.PI;
+			}
+		};
+
+		SawToothInverted = new Oscillator() {
+			@Override
+			public String toString() {
+				return "SawToothInverted";
+			}
+
+			@Override
+			public double getSampleValue(double phase) {
+				return -SawTooth.getSampleValue(phase);
+			}
+		};
+
+		Flat = new Oscillator() {
+			@Override
+			public String toString() {
+				return "Flat";
+			}
+
+			@Override
+			public double getSampleValue(double phase) {
+				if (getNormalizedPhase(phase) < Math.PI)
+					return 1;
+				else
+					return -1;
+			}
+		};
+
+		Noise = new Oscillator() {
+			@Override
+			public String toString() {
+				return "Noise";
+			}
+
+			@Override
+			public double getSampleValue(double phase) {
+				return Math.random() * 2 - 1;
+			}
+		};
+
+		ConstZero = (phase) -> {
+			return 0;
 		};
 	}
 
-
+	private static double getNormalizedPhase(double phase) {
+		return phase - (Utils.doublePi * (int) (phase / Utils.doublePi));
+	}
 }

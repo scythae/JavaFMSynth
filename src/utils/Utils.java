@@ -2,6 +2,7 @@ package utils;
 
 public class Utils {
 	public final static double doublePi = 2.0 * Math.PI;
+	public final static double halfPi = 0.5 * Math.PI;
 
 	public interface Callback {
 		public void execute();
@@ -27,13 +28,4 @@ public class Utils {
 		result.start();
 		return result;
 	};
-
-	public static int keepInRange(int val, int min, int max) {
-		int range = max - min + 1;
-		while (val < min)
-			val += range;
-		while (val > max)
-			val -= range;
-		return val;
-	}
 }
