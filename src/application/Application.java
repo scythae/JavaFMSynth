@@ -1,80 +1,89 @@
 package application;
-import java.awt.Rectangle;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
+import java.awt.BorderLayout;
+import java.awt.event.ActionEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
+import javax.swing.AbstractAction;
+import javax.swing.ActionMap;
+import javax.swing.InputMap;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
+import javax.swing.KeyStroke;
 import javax.swing.WindowConstants;
 
 import syn.Synthesizer;
 import syn.input.KeyInput;
 
 public class Application {
-	private static volatile boolean running = false;
+	private static volatile Application instance = null;
 
-	private JFrame frame;
+	private JPanel mainContainer;
 	private Synthesizer synthesizer;
 	private KeyInput keyInput;
 
 	public Application() {
-		if (running)
+		if (isRunning())
 			throw new RuntimeException("Application is already launched.");
 
-		running = true;
+		instance = this;
 
-		frame = new JFrame("Synth");
+		JFrame frame = new JFrame("Synth");
 		frame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
 
 		frame.setSize(640, 480);
-		frame.setResizable(false);
 		frame.setLocationRelativeTo(null);
-		frame.setLayout(null);
-		frame.addKeyListener(createKeyListener());
+		mainContainer = new JPanel();
+		frame.add(mainContainer, BorderLayout.CENTER);
+
 		frame.addWindowListener(new WindowAdapter() {
 			@Override
 			public void windowClosed(WindowEvent e) {
-				running = false;
+				instance = null;
 			};
 		});
-		frame.setVisible(true);
 
 		keyInput = new KeyInput();
 		synthesizer = new Synthesizer(keyInput);
 		keyInput.setTimeProvider(synthesizer);
 
 		initUI();
+		initKeyBindings();
+
+		frame.setVisible(true);
 	}
 
 	public static boolean isRunning() {
-		return running;
+		return instance != null;
 	}
 
-	private KeyListener createKeyListener() {
-		return new KeyListener() {
-			@Override
-			public void keyPressed(KeyEvent e) {
-				keyInput.keyDown(e.getKeyCode());
-			}
+	@SuppressWarnings("serial")
+	private void initKeyBindings() {
+		InputMap im = mainContainer.getInputMap(JPanel.WHEN_IN_FOCUSED_WINDOW);
+		ActionMap am = mainContainer.getActionMap();
 
-			@Override
-			public void keyReleased(KeyEvent e) {
-				keyInput.keyUp(e.getKeyCode());
+		for (boolean release : new boolean[] {false, true})
+			for (int keyCode : keyInput.getKeyCodes()) {
+				Object key = new Object();
+				im.put(KeyStroke.getKeyStroke(keyCode, 0, release), key);
+				am.put(
+						key,
+						new AbstractAction() {
+							@Override
+							public void actionPerformed(ActionEvent arg0) {
+								if (release)
+									keyInput.keyUp(keyCode);
+								else
+									keyInput.keyDown(keyCode);
+							}
+						}
+				);
 			}
-
-			@Override
-			public void keyTyped(KeyEvent e) {
-			}
-		};
 	}
 
 	private void initUI() {
 		JPanel waveViewer = new WaveViewer(synthesizer);
-		Rectangle bounds = (Rectangle) frame.getContentPane().getBounds().clone();
-		bounds.grow(-10, -10);
-		waveViewer.setBounds(bounds);
-		frame.add(waveViewer);
+		mainContainer.setLayout(new BorderLayout());
+		mainContainer.add(waveViewer);
 	}
 }

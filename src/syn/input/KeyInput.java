@@ -10,7 +10,6 @@ import java.util.Map;
 
 import syn.Note;
 import syn.NotesProvider;
-import utils.Utils;
 
 public class KeyInput implements NotesProvider {
 	private HashSet<Integer> keyStrokesLightWeight = new HashSet<>();
@@ -20,7 +19,6 @@ public class KeyInput implements NotesProvider {
 	private TimeProvider timeProvider = () -> {return 0.0;};
 
 	public KeyInput() {
-		runKeyStrokesCleaner();
 		fillKeysAndFrequencies();
 	}
 
@@ -84,6 +82,7 @@ public class KeyInput implements NotesProvider {
 		double globalTime = timeProvider.getTime();
 		ArrayList<Note> result;
 
+		boolean needCleaning = false;
 		synchronized (keyStrokes) {
 			result = new ArrayList<>(keyStrokes.size());
 
@@ -91,27 +90,43 @@ public class KeyInput implements NotesProvider {
 				Note note = new Note();
 				note.frequency = keyStroke.frequency;
 				note.timeSinceHit = globalTime - keyStroke.whenDown;
+
+				if (keyStroke.finished) {
+					needCleaning = true;
+				}
+
 				note.timeSinceReleased = globalTime - keyStroke.whenUp;
 				result.add(note);
 			}
 		}
 
+		if (needCleaning)
+			cleanKeyStrokes();
+
 		return result;
 	}
 
-	private void runKeyStrokesCleaner() {
-		Utils.startTimer("KeyStrokesCleaner", 20, () -> {
-			synchronized (keyStrokes) {
-				List<Integer> finishedKeyCodes = new LinkedList<>();
+	public Iterable<Integer> getKeyCodes() {
+		LinkedList<Integer> result = new LinkedList<>();
 
-				for (int keyCode : keyStrokes.keySet())
-					if (keyStrokes.get(keyCode).finished)
-						finishedKeyCodes.add(keyCode);
+		for (int i = 0; i < keysAndFrequencies.length; i++)
+			if (keysAndFrequencies[i] > 0)
+				result.add(i);
 
-				for (int keyCode : finishedKeyCodes)
-					keyStrokes.remove(keyCode);
-			}
-		});
+		return result;
+	}
+
+	private void cleanKeyStrokes() {
+		synchronized (keyStrokes) {
+			List<Integer> finishedKeyCodes = new LinkedList<>();
+
+			for (int keyCode : keyStrokes.keySet())
+				if (keyStrokes.get(keyCode).finished)
+					finishedKeyCodes.add(keyCode);
+
+			for (int keyCode : finishedKeyCodes)
+				keyStrokes.remove(keyCode);
+		}
 	}
 
 	private void fillKeysAndFrequencies() {
