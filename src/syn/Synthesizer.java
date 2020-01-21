@@ -5,7 +5,6 @@ import java.util.List;
 
 import syn.input.TimeProvider;
 import syn.operator.Operator;
-import syn.operator.Oscillators;
 
 public class Synthesizer implements TimeProvider{
 	private MainWaveGenerator waveGenerator;
@@ -13,29 +12,28 @@ public class Synthesizer implements TimeProvider{
 
 	private double timeSeconds = 0.0;
 
-	private ArrayList<Operator> rootOperators = new ArrayList<>();
+	private final List<Operator> emptyOperatorList = new ArrayList<>(0);
+
 
 	public Synthesizer(NotesProvider notesProvider) {
-
-		rootOperators.add(
-			new Operator().setModulator(
-				new Operator().setLevel(.5).setOscillator(Oscillators.Flat)
-			)
-		);
-
-		/*
-		rootOperators.add(
-			new Operator().setFrequencyFixed(1).setModulator(
-				new Operator().setFrequencyFixed(1).setLevel(1)
-			)
-		);*/
-
 		this.notesProvider = notesProvider;
 		if (notesProvider == null)
 			notesProvider = () -> {return new LinkedList<>();};
 
 		waveGenerator = new MainWaveGenerator();
 		new SoundPlayer(waveGenerator);
+	}
+
+	public synchronized void addCarrier(Operator carrier) {
+		List<Operator> carriers = new ArrayList<>(waveGenerator.carriers.size() + 1);
+		carriers.addAll(waveGenerator.carriers);
+		carriers.add(carrier);
+
+		waveGenerator.carriers = carriers;
+	}
+
+	public synchronized void cleanCarriers() {
+		waveGenerator.carriers = emptyOperatorList;
 	}
 
 	@Override
@@ -51,6 +49,8 @@ public class Synthesizer implements TimeProvider{
 		private static final double DefaultVolumeNormalizingCoefficient = 0.9;
 		private static final int sampleStoreSize = 2000;
 		private LinkedList<Double> samplesStore = new LinkedList<Double>();
+
+		private volatile List<Operator> carriers = emptyOperatorList;
 
 		MainWaveGenerator() {
 			for (int i = 0; i < sampleStoreSize; i++)
@@ -85,10 +85,11 @@ public class Synthesizer implements TimeProvider{
 		private double getSampleValue(Note note) {
 			double result = 0;
 
-			for (Operator op: rootOperators)
+			List<Operator> tmpCarriers = carriers;
+			for (Operator op: tmpCarriers)
 				result += op.getSampleValue(note);
 
-			result /= rootOperators.size();
+			result /= tmpCarriers.size();
 
 			return result;
 		}

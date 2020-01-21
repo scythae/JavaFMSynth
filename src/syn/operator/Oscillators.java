@@ -9,7 +9,6 @@ public class Oscillators {
 	public final static Oscillator SawToothInverted;
 	public final static Oscillator Flat;
 	public final static Oscillator Noise;
-	public final static Oscillator ConstZero;
 
 	static {
 		Sine = new Oscillator() {
@@ -92,10 +91,6 @@ public class Oscillators {
 			public double getSampleValue(double phase) {
 				return Math.random() * 2 - 1;
 			}
-		};
-
-		ConstZero = (phase) -> {
-			return 0;
 		};
 	}
 
