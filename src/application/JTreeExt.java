@@ -48,13 +48,13 @@ public class JTreeExt extends JTree {
 	}
 
 	public DefaultMutableTreeNode addToCurrentNode(Object userObject) {
-		DefaultMutableTreeNode node = getCurrentNode();
+		DefaultMutableTreeNode node = getSelectedNode();
 		if (node == null)
 			node = rootNode;
 
 		DefaultMutableTreeNode childNode = new DefaultMutableTreeNode(userObject);
 
-		model.insertNodeInto(childNode, node, 0);
+		model.insertNodeInto(childNode, node, node.getChildCount());
 
 		TreePath newPath = new TreePath(childNode.getPath());
 		scrollPathToVisible(newPath);
@@ -63,17 +63,26 @@ public class JTreeExt extends JTree {
 	}
 
 	public void removeCurrentNode() {
-		DefaultMutableTreeNode node = getCurrentNode();
-		if (node == null || node == rootNode )
+		DefaultMutableTreeNode node, parentNode, newNodeToBeSelected;
+
+		node = getSelectedNode();
+		if (node == null || node.isRoot() )
 			return;
 
-		DefaultMutableTreeNode parentNode = (DefaultMutableTreeNode) node.getParent();
+		parentNode = (DefaultMutableTreeNode) node.getParent();
+
+		newNodeToBeSelected = node.getPreviousSibling();
+		if (newNodeToBeSelected == null)
+			newNodeToBeSelected = node.getNextSibling();
+		if (newNodeToBeSelected == null)
+			newNodeToBeSelected = parentNode;
 
 		model.removeNodeFromParent(node);
-		setSelectionPath(new TreePath(parentNode.getPath()));
+
+		setSelectionPath(new TreePath(newNodeToBeSelected.getPath()));
 	}
 
-	public DefaultMutableTreeNode getCurrentNode() {
+	public DefaultMutableTreeNode getSelectedNode() {
 		TreePath path = getSelectionPath();
 		if (path == null)
 			return null;
@@ -81,8 +90,8 @@ public class JTreeExt extends JTree {
 			return (DefaultMutableTreeNode) path.getLastPathComponent();
 	}
 
-	public Object getCurrentNodeObject() {
-		DefaultMutableTreeNode node = getCurrentNode();
+	public Object getSelectedNodeObject() {
+		DefaultMutableTreeNode node = getSelectedNode();
 		if (node == null)
 			return null;
 		else

@@ -5,7 +5,7 @@ import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.SourceDataLine;
 
 import application.Application;
-import utils.Log;
+import utils.Utils;
 
 class SoundPlayer {
 	private static final int samplesPerSecond = 44100;
@@ -21,7 +21,7 @@ class SoundPlayer {
 
 	public SoundPlayer(WaveGenerator waveGenerator) {
 		if (waveGenerator == null) {
-			Log.out("SoundPlayer requires non-null waveGenerator.");
+			Utils.complain("SoundPlayer requires non-null waveGenerator.");
 			return;
 		}
 

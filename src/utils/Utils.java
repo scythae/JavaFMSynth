@@ -19,7 +19,7 @@ public class Utils {
 					Thread.sleep(intervalMs);
 				}
 			} catch (InterruptedException e) {
-				Log.out(timerName + " error.");
+				Utils.complain(timerName + " error.");
 				e.printStackTrace();
 			}
 		});
@@ -27,5 +27,9 @@ public class Utils {
 		result.setPriority(Thread.MIN_PRIORITY);
 		result.start();
 		return result;
+	};
+
+	public static void complain(String text) {
+		Log.out(text);
 	};
 }

@@ -1,5 +1,6 @@
 package application;
 import java.awt.Container;
+import java.awt.GridLayout;
 import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
 import java.awt.event.WindowAdapter;
@@ -10,12 +11,16 @@ import javax.swing.AbstractAction;
 import javax.swing.ActionMap;
 import javax.swing.InputMap;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.KeyStroke;
+import javax.swing.SwingConstants;
 import javax.swing.WindowConstants;
+import javax.swing.border.EmptyBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
@@ -37,7 +42,7 @@ public class Application {
 	private Synthesizer synthesizer;
 	private KeyInput keyInput;
 	private JComponent keyListener;
-	private Operator selectedOperator;
+	private Operator selectedOperator = new Operator();
 
 	public Application() {
 		if (isRunning())
@@ -51,9 +56,10 @@ public class Application {
 	public void createAnShowGUI() {
 		JFrame frame = new JFrame("Synth");
 		frame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
-		frame.setLocationRelativeTo(null);
-		frame.setSize(640, 480);
+		frame.setSize(800, 600);
 		frame.setResizable(false);
+		frame.setLocationRelativeTo(null);
+
 		frame.setVisible(true);
 
 		mainPane = frame.getContentPane();
@@ -128,6 +134,7 @@ public class Application {
 		mainPane.add(waveViewer);
 
 		JTreeExt treeOperators = new JTreeExt("Synth");
+		treeOperators.setFocusable(false);
 		bounds.setBounds(0, 0, panelOperators.getWidth(), panelOperators.getHeight() - buttonHeight);
 		treeOperators.setBounds(bounds);
 		panelOperators.add(treeOperators);
@@ -142,35 +149,103 @@ public class Application {
 		btnRemoveOperator.setBounds(bounds);
 		panelOperators.add(btnRemoveOperator);
 
-		JComboBox<Oscillator> opOscillator = new JComboBox<>(new Oscillator[] {
-				Oscillators.Sine, Oscillators.Triangle, Oscillators.SawTooth,
-				Oscillators.SawToothInverted, Oscillators.Flat, Oscillators.Noise
+
+		JComboBox<Oscillator> comboboxOscillator = new JComboBox<>(new Oscillator[] {
+			Oscillators.Sine, Oscillators.Triangle, Oscillators.SawTooth,
+			Oscillators.SawToothInverted, Oscillators.Flat, Oscillators.Noise
 		});
-		bounds.setBounds(0, 0, opOscillator.getPreferredSize().width, opOscillator.getPreferredSize().height);
-		opOscillator.setBounds(bounds);
-		panelOperatorValues.add(opOscillator);
+		comboboxOscillator.setFocusable(false);
+		panelOperatorValues.add(createLabel("Wave form"));
+		panelOperatorValues.add(comboboxOscillator);
+		panelOperatorValues.add(createLabel(""));
 
-		JSliderLogarithmic opLevel = new JSliderLogarithmic();
-		bounds.y += bounds.height;
-		opLevel.setBounds(bounds);
-		panelOperatorValues.add(opLevel);
+		JSliderScientific sliderLevel = new JSliderScientific(
+			Operator.minLevel, Operator.maxLevel, 0.5, 1
+		);
+		panelOperatorValues.add(createLabel("Level"));
+		panelOperatorValues.add(sliderLevel);
+		panelOperatorValues.add(sliderLevel.getLabel());
+
+		JSliderScientific sliderDetune = new JSliderScientific(
+			-Operator.maxDetune, Operator.maxDetune, 0, 1
+		);
+		panelOperatorValues.add(createLabel("Detune, Hz"));
+		panelOperatorValues.add(sliderDetune);
+		panelOperatorValues.add(sliderDetune.getLabel());
+
+		JSliderScientific sliderFrequencyProportionalLevel = new JSliderScientific(
+			Operator.minProportionalFrequency, Operator.maxProportionalFrequency, 1, 1
+		);
+		sliderFrequencyProportionalLevel.setMinMax(Operator.minProportionalFrequency * 100, Operator.maxProportionalFrequency * 100);
+		panelOperatorValues.add(createLabel("Frequency level"));
+		panelOperatorValues.add(sliderFrequencyProportionalLevel);
+		panelOperatorValues.add(sliderFrequencyProportionalLevel.getLabel());
+
+		JCheckBox checkboxFixedFrequency = new JCheckBox("Fixed frequency");
+		checkboxFixedFrequency.setHorizontalAlignment(SwingConstants.RIGHT);
+		checkboxFixedFrequency.setHorizontalTextPosition(SwingConstants.LEFT);
+		checkboxFixedFrequency.setFocusable(false);
+		padRight(checkboxFixedFrequency);
+
+		JSliderScientific sliderFrequencyFixedLevel = new JSliderScientific(
+			Operator.minFixedFrequency, Operator.maxFixedFrequency, Operator.minFixedFrequency, 10
+		);
+		panelOperatorValues.add(checkboxFixedFrequency);
+		panelOperatorValues.add(sliderFrequencyFixedLevel);
+		panelOperatorValues.add(sliderFrequencyFixedLevel.getLabel());
 
 
 
-		btnAddOperator.addActionListener((actionEvent) -> treeOperators.addToCurrentNode(new Operator()));
-		btnRemoveOperator.addActionListener((actionEvent) -> treeOperators.removeCurrentNode());
 
-		opOscillator.addActionListener((ActionEvent e) -> {
-				selectedOperator.setOscillator((Oscillator) opOscillator.getSelectedItem());
+
+
+		int gridRowHeight = 25;
+		int rowCount = panelOperatorValues.getComponentCount() / 3 + 1;
+		panelOperatorValues.setLayout(new GridLayout(0, 3));
+		panelOperatorValues.setSize(panelOperatorValues.getWidth(), gridRowHeight * rowCount);
+
+		btnAddOperator.addActionListener((actionEvent) ->
+			treeOperators.addToCurrentNode(new Operator())
+		);
+		btnRemoveOperator.addActionListener((actionEvent) ->
+			treeOperators.removeCurrentNode()
+		);
+		comboboxOscillator.addActionListener((ActionEvent e) ->
+			selectedOperator.setOscillator((Oscillator) comboboxOscillator.getSelectedItem())
+		);
+		sliderLevel.addChangeListener((ChangeEvent e) ->
+			selectedOperator.setLevel(sliderLevel.getValueSc())
+		);
+		sliderFrequencyProportionalLevel.addChangeListener((ChangeEvent e) ->
+			selectedOperator.setFrequencyProportional(sliderFrequencyProportionalLevel.getValueSc())
+		);
+		sliderFrequencyFixedLevel.addChangeListener((ChangeEvent e) ->
+			selectedOperator.setFrequencyFixed(sliderFrequencyFixedLevel.getValueSc())
+		);
+		sliderDetune.addChangeListener((ChangeEvent e) ->
+			selectedOperator.setDetune(sliderDetune.getValueSc())
+		);
+		checkboxFixedFrequency.addChangeListener((ChangeEvent e) -> {
+			boolean fixed = checkboxFixedFrequency.isSelected();
+
+			sliderDetune.setVisible(!fixed);
+			sliderDetune.getLabel().setVisible(!fixed);
+			sliderFrequencyProportionalLevel.setVisible(!fixed);
+			sliderFrequencyProportionalLevel.getLabel().setVisible(!fixed);
+			sliderFrequencyFixedLevel.setVisible(fixed);
+			sliderFrequencyFixedLevel.getLabel().setVisible(fixed);
+
+			if (fixed)
+				selectedOperator.setFrequencyFixed(sliderFrequencyFixedLevel.getValueSc());
+			else
+				selectedOperator.setFrequencyProportional(sliderFrequencyProportionalLevel.getValueSc());
 		});
-		opLevel.addChangeListener((ChangeEvent e) -> {
-				selectedOperator.setLevel(opLevel.getValueLog());
-		});
+		checkboxFixedFrequency.setSelected(!checkboxFixedFrequency.isSelected());
 
 		treeOperators.getSelectionModel().addTreeSelectionListener(new TreeSelectionListener() {
 			@Override
 			public void valueChanged(TreeSelectionEvent e) {
-				Object nodeObject = treeOperators.getCurrentNodeObject();
+				Object nodeObject = treeOperators.getSelectedNodeObject();
 				if (!(nodeObject instanceof Operator)) {
 					panelOperatorValues.setVisible(false);
 					return;
@@ -181,8 +256,16 @@ public class Application {
 				selectedOperator = op;
 				OperatorValues values = op.getOperatorValues();
 
-				opOscillator.setSelectedItem(values.oscillator);
-				opLevel.setValueLog(values.level);
+				comboboxOscillator.setSelectedItem(values.oscillator);
+				sliderLevel.setValueSc(values.level);
+				checkboxFixedFrequency.setSelected(values.frequencyFixed);
+				if (values.frequencyFixed)
+					sliderFrequencyFixedLevel.setValueSc(values.frequencyLevel);
+				else
+					sliderFrequencyProportionalLevel.setValueSc(values.frequencyLevel);
+
+				sliderDetune.setValueSc(values.detune);
+				checkboxFixedFrequency.setSelected(values.frequencyFixed);
 			}
 		});
 
@@ -192,6 +275,7 @@ public class Application {
 				reloadOperatorsToSynth();
 			}
 
+			@SuppressWarnings("rawtypes")
 			private void reloadOperatorsToSynth() {
 				synthesizer.cleanCarriers();
 
@@ -199,8 +283,7 @@ public class Application {
 				if (root == null)
 					return;
 
-				@SuppressWarnings("rawtypes")
-				Enumeration nodes = root.depthFirstEnumeration();
+				Enumeration nodes = root.breadthFirstEnumeration();
 				while (nodes.hasMoreElements())
 					loadOperatorFromNodeToSynth((DefaultMutableTreeNode) nodes.nextElement());
 			}
@@ -211,6 +294,7 @@ public class Application {
 					return;
 
 				Operator op = (Operator) node.getUserObject();
+				op.cleanModulators();
 
 				if (parent.isRoot())
 					synthesizer.addCarrier(op);
@@ -222,7 +306,20 @@ public class Application {
 		};
 
 		treeOperators.setSelectionPath(new TreePath(
-				treeOperators.addToCurrentNode(new Operator()).getPath()
+			treeOperators.addToCurrentNode(new Operator().setLevel(0.5)).getPath()
 		));
+
+		treeOperators.addToCurrentNode(new Operator().setFrequencyFixed(2));
+	}
+
+	private JLabel createLabel(String text) {
+		JLabel result = new JLabel(text);
+		result.setHorizontalAlignment(SwingConstants.RIGHT);
+		padRight(result);
+		return result;
+	}
+
+	private void padRight(JComponent component) {
+		component.setBorder(new EmptyBorder(0, 0, 0, 20));
 	}
 }

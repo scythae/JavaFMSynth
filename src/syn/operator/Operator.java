@@ -4,13 +4,21 @@ import java.util.ArrayList;
 import java.util.List;
 
 import syn.Note;
-import utils.Log;
 import utils.Utils;
 
 public class Operator {
+	public static final double minLevel = 0;
+	public static final double maxLevel = 1;
+	public static final int maxDetune = 50;
+	public static final int minFixedFrequency = 0;
+	public static final int maxFixedFrequency = 20000;
+	public static final int minProportionalFrequency = 0;
+	public static final int maxProportionalFrequency = 32;
+
 	private OperatorValues values = new OperatorValues();
 
 	private boolean isModulator = false;
+
 
 	public double getSampleValue(Note note) {
 		/* Value of carrier, modulated by modulator:
@@ -40,14 +48,14 @@ public class Operator {
 
 	public Operator setOscillator(Oscillator oscillator) {
 		if (oscillator == null)
-			Log.out("Operator requires non-null oscillator.");
+			Utils.complain("Operator requires non-null oscillator.");
 		else
 			values.oscillator = oscillator;
 
 		return this;
 	};
 
-	public Operator addModulator(Operator modulator) {
+	public synchronized Operator addModulator(Operator modulator) {
 		List<Operator> modulators = new ArrayList<>(values.modulators.size() + 1);
 		modulators.addAll(values.modulators);
 
@@ -60,9 +68,13 @@ public class Operator {
 		return this;
 	};
 
+	public synchronized void cleanModulators() {
+		values.modulators = OperatorValues.emptyOperatorList;
+	};
+
 	public Operator setLevel(double level) {
-		if (level < 0 || level > 1)
-			Log.out("Operator's level's range should be from 0 to 1.");
+		if (level < minLevel || level > maxLevel)
+			Utils.complain("Operator's level's range should be from " + minLevel + " to " + maxLevel + ".");
 		else
 			values.level = level;
 
@@ -70,8 +82,8 @@ public class Operator {
 	};
 
 	public Operator setDetune(double detune) {
-		if (detune < -50 || detune > 50)
-			Log.out("Operator's detune should be in a range between -50 Hz and 50 Hz.");
+		if (detune < -maxDetune || detune > maxDetune)
+			Utils.complain("Operator's detune should be in a range between -" + maxDetune + " Hz and " + maxDetune + " Hz.");
 		else
 			values.detune = detune;
 
@@ -79,8 +91,8 @@ public class Operator {
 	};
 
 	public Operator setFrequencyFixed(double frequency) {
-		if (frequency < 0 || frequency > 20000)
-			Log.out("Operator's fixed frequency should be in a range between 0 Hz and 20000 Hz.");
+		if (frequency < minFixedFrequency || frequency > maxFixedFrequency)
+			Utils.complain("Operator's fixed frequency should be in a range between " + minFixedFrequency + " Hz and " + maxFixedFrequency + " Hz.");
 		else {
 			values.frequencyLevel = frequency;
 			values.frequencyFixed = true;
@@ -90,8 +102,8 @@ public class Operator {
 	};
 
 	public Operator setFrequencyProportional(double frequency) {
-		if (frequency < 0 || frequency > 32)
-			Log.out("Operator's proportional frequency should be in a range between 0 times and 32 times.");
+		if (frequency < minProportionalFrequency || frequency > maxProportionalFrequency)
+			Utils.complain("Operator's proportional frequency should be in a range between " + minProportionalFrequency + " times and " + maxProportionalFrequency + " times.");
 		else {
 			values.frequencyLevel = frequency;
 			values.frequencyFixed = false;
@@ -115,6 +127,9 @@ public class Operator {
 
 	@Override
 	public String toString() {
-		return "Operator";
+		if (isModulator)
+			return "Modulator";
+		else
+			return "Carrier";
 	}
 }
