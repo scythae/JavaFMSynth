@@ -9,11 +9,11 @@ import syn.operator.Operator;
 public class Synthesizer implements TimeProvider{
 	private MainWaveGenerator waveGenerator;
 	private NotesProvider notesProvider;
-
 	private double timeSeconds = 0.0;
-
 	private final List<Operator> emptyOperatorList = new ArrayList<>(0);
 
+	public volatile double gain = 1.0;
+	private final double defaultGain = 0.25;
 
 	public Synthesizer(NotesProvider notesProvider) {
 		this.notesProvider = notesProvider;
@@ -46,7 +46,6 @@ public class Synthesizer implements TimeProvider{
 	}
 
 	private class MainWaveGenerator implements WaveGenerator {
-		private static final double DefaultVolumeNormalizingCoefficient = 0.9;
 		private static final int sampleStoreSize = 2000;
 		private LinkedList<Double> samplesStore = new LinkedList<Double>();
 
@@ -60,17 +59,12 @@ public class Synthesizer implements TimeProvider{
 		@Override
 		public double getSampleValue() {
 			double result = 0;
-			int strokesCount = 0;
 
-			for (Note note : notesProvider.getNotes()) {
+			List<Note> tmpNotes = notesProvider.getNotes();
+			for (Note note : tmpNotes)
 				result += getSampleValue(note);
-				strokesCount++;
-			}
 
-			if (strokesCount > 0) {
-				double normalizingCoef = Math.pow(1.0 / strokesCount, 1) * DefaultVolumeNormalizingCoefficient;
-				result = result * normalizingCoef;
-			}
+			result *= defaultGain * gain * getSampleValueReducer(tmpNotes.size());
 
 			synchronized (samplesStore) {
 				samplesStore.removeLast();
@@ -89,9 +83,13 @@ public class Synthesizer implements TimeProvider{
 			for (Operator op: tmpCarriers)
 				result += op.getSampleValue(note);
 
-			result /= tmpCarriers.size();
+			result *= getSampleValueReducer(tmpCarriers.size());
 
 			return result;
+		}
+
+		private double getSampleValueReducer(int sourceCount) {
+			return sourceCount == 0 ? 1 : Math.pow(1.0 / sourceCount, 0.5);
 		}
 
 		public List<Double> getLastSamples() {

@@ -59,7 +59,6 @@ public class Application {
 		frame.setSize(800, 600);
 		frame.setResizable(false);
 		frame.setLocationRelativeTo(null);
-
 		frame.setVisible(true);
 
 		mainPane = frame.getContentPane();
@@ -123,13 +122,17 @@ public class Application {
 		mainPane.add(panelOperators);
 
 		JPanel panelOperatorValues = new JPanel();
-		panelOperatorValues.setLayout(null);
-		bounds.setBounds(bounds.width, 0, mainPane.getWidth() - bounds.width, mainPane.getHeight() / 2);
+		bounds.setBounds(bounds.width, 0, mainPane.getWidth() - bounds.width, mainPane.getHeight() / 3);
 		panelOperatorValues.setBounds(bounds);
 		mainPane.add(panelOperatorValues);
 
+		JPanel panelCommonValues = new JPanel();
+		bounds.y += bounds.height;
+		panelCommonValues.setBounds(bounds);
+		mainPane.add(panelCommonValues);
+
 		JPanel waveViewer = new WaveViewer(synthesizer);
-		bounds.y = bounds.height;
+		bounds.y += bounds.height;
 		waveViewer.setBounds(bounds);
 		mainPane.add(waveViewer);
 
@@ -194,15 +197,19 @@ public class Application {
 		panelOperatorValues.add(sliderFrequencyFixedLevel);
 		panelOperatorValues.add(sliderFrequencyFixedLevel.getLabel());
 
-
-
-
+		JSliderScientific sliderCommonGainLevel = new JSliderScientific(
+			0, 4, 1, Math.E
+		);
+		sliderCommonGainLevel.setValueSc(synthesizer.gain);
+		sliderCommonGainLevel.setRounding(3);
+		panelCommonValues.add(createLabel("Gain"));
+		panelCommonValues.add(sliderCommonGainLevel);
+		panelCommonValues.add(sliderCommonGainLevel.getLabel());
 
 
 		int gridRowHeight = 25;
-		int rowCount = panelOperatorValues.getComponentCount() / 3 + 1;
-		panelOperatorValues.setLayout(new GridLayout(0, 3));
-		panelOperatorValues.setSize(panelOperatorValues.getWidth(), gridRowHeight * rowCount);
+		setGridLayout(panelOperatorValues, 3, gridRowHeight);
+		setGridLayout(panelCommonValues, 3, gridRowHeight);
 
 		btnAddOperator.addActionListener((actionEvent) ->
 			treeOperators.addToCurrentNode(new Operator())
@@ -241,6 +248,11 @@ public class Application {
 				selectedOperator.setFrequencyProportional(sliderFrequencyProportionalLevel.getValueSc());
 		});
 		checkboxFixedFrequency.setSelected(!checkboxFixedFrequency.isSelected());
+
+		sliderCommonGainLevel.addChangeListener((ChangeEvent e) ->
+			synthesizer.gain = sliderCommonGainLevel.getValueSc()
+		);
+
 
 		treeOperators.getSelectionModel().addTreeSelectionListener(new TreeSelectionListener() {
 			@Override
@@ -321,5 +333,11 @@ public class Application {
 
 	private void padRight(JComponent component) {
 		component.setBorder(new EmptyBorder(0, 0, 0, 20));
+	}
+
+	private void setGridLayout(Container container, int colCount, int rowHeight) {
+		int rowCount = container.getComponentCount() / colCount + 1;
+		container.setLayout(new GridLayout(0, colCount));
+		container.setSize(container.getWidth(), rowHeight * rowCount);
 	}
 }

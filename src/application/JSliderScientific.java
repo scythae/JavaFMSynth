@@ -1,5 +1,8 @@
 package application;
 
+import java.awt.event.MouseWheelEvent;
+import java.text.NumberFormat;
+
 import utils.Utils;
 
 public class JSliderScientific extends JLabeledSlider {
@@ -9,23 +12,40 @@ public class JSliderScientific extends JLabeledSlider {
 	private double maximum = 1;
 	private double exponent = 1;
 
+	private NumberFormat labelFormat = NumberFormat.getInstance();
+
 	public JSliderScientific() {
 		super();
-		init();
+		init(minimum, maximum, minimum, exponent);
 	}
 
 	public JSliderScientific(double minimum, double maximum, double value, double exponent) {
 		super();
-		init();
+		init(minimum, maximum, value, exponent);
+	}
+
+	private void init(double minimum, double maximum, double value, double exponent) {
+		setMinMax(0, 100000);
 		this.minimum = minimum;
 		this.maximum = maximum;
 		setExponent(exponent);
 		setValueSc(value);
-	}
 
-	private void init() {
-		setMinMax(0, 100000);
-		setValue(0);
+		this.addMouseWheelListener((MouseWheelEvent e) -> {
+			float step = Math.abs(getMaximum() - getMinimum()) / 10000;
+
+			if (e.isControlDown() && e.isShiftDown())
+				step *= 1000;
+			else if (e.isControlDown())
+				step *= 100;
+			else if (e.isShiftDown())
+				step *= 10;
+
+			if (step < 1)
+				step = 1;
+
+			setValue(getValue() + e.getWheelRotation() * Math.round(step));
+		});
 	}
 
 	public void setExponent(double exponent) {
@@ -42,6 +62,11 @@ public class JSliderScientific extends JLabeledSlider {
 	public void setValueSc(double value) {
 		double normalizedValue = Math.pow((value - minimum) / (maximum - minimum), 1 / exponent);
 		setNormalizedValue(normalizedValue);
+	}
+
+	public void setRounding(int maxFractionDigits) {
+		labelFormat.setMaximumFractionDigits(maxFractionDigits);
+		fireStateChanged();
 	}
 
 	private double getNormalizedValue() {
@@ -70,6 +95,9 @@ public class JSliderScientific extends JLabeledSlider {
 
 	@Override
 	public String getValueForLabel() {
-		return "" + getValueSc();
+		if (labelFormat == null)
+			labelFormat = NumberFormat.getInstance();
+
+		return labelFormat.format(getValueSc());
 	}
 }
