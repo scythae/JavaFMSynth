@@ -3,6 +3,7 @@ package syn.operator;
 import java.util.ArrayList;
 import java.util.List;
 
+import utils.Log;
 import utils.Utils;
 
 public class Operator {
@@ -45,6 +46,7 @@ public class Operator {
 		for (Operator modulator : modulators)
 			modulation += modulator.getSampleValue(note);
 
+		Log.out(modulation);
 		double phase = angularFrequency * (note.timeSinceHit + modulation);
 		double result = values.oscillator.getSampleValue(phase) * values.level * getADSREnvelope(note);
 		if (isModulator)
@@ -68,7 +70,11 @@ public class Operator {
 			if (Utils.doubleEquals(values.release, 0))
 				return 0;
 
-			result *= 1 - note.timeSinceReleased / values.release;
+			double releaseMultiplier = 1 - note.timeSinceReleased / values.release;
+			if (releaseMultiplier > 0)
+				result *= releaseMultiplier;
+			else
+				result = 0;
 		}
 
 		return result;

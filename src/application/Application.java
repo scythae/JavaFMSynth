@@ -185,6 +185,13 @@ public class Application {
 		btnRemoveOperator.setBounds(bounds);
 		panelOperators.add(btnRemoveOperator);
 
+		btnAddOperator.addActionListener((actionEvent) ->
+			treeOperators.addToCurrentNode(new Operator())
+		);
+		btnRemoveOperator.addActionListener((actionEvent) ->
+			treeOperators.removeCurrentNode()
+		);
+
 		treeOperators.getSelectionModel().addTreeSelectionListener(new TreeSelectionListener() {
 			@Override
 			public void valueChanged(TreeSelectionEvent e) {
