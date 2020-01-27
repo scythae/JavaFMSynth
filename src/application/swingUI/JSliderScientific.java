@@ -1,4 +1,4 @@
-package application;
+package application.swingUI;
 
 import java.awt.event.MouseWheelEvent;
 import java.text.NumberFormat;
@@ -16,20 +16,20 @@ public class JSliderScientific extends JLabeledSlider {
 
 	public JSliderScientific() {
 		super();
-		init(minimum, maximum, minimum, exponent);
+		init(minimum, maximum, exponent);
 	}
 
-	public JSliderScientific(double minimum, double maximum, double value, double exponent) {
+	public JSliderScientific(double minimum, double maximum, double exponent) {
 		super();
-		init(minimum, maximum, value, exponent);
+		init(minimum, maximum, exponent);
 	}
 
-	private void init(double minimum, double maximum, double value, double exponent) {
+	private void init(double minimum, double maximum, double exponent) {
 		setMinMax(0, 100000);
 		this.minimum = minimum;
 		this.maximum = maximum;
 		setExponent(exponent);
-		setValueSc(value);
+		setValueSc(minimum);
 
 		this.addMouseWheelListener((MouseWheelEvent e) -> {
 			float step = Math.abs(getMaximum() - getMinimum()) / 10000;

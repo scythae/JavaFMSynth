@@ -1,4 +1,4 @@
-package application;
+package application.swingUI;
 
 import javax.swing.JTree;
 import javax.swing.event.TreeModelEvent;

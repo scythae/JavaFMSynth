@@ -1,4 +1,4 @@
-package application;
+package application.swingUI;
 
 import javax.swing.JLabel;
 import javax.swing.JSlider;
@@ -13,7 +13,7 @@ public class JLabeledSlider extends JSlider {
 		super();
 
 		label = new JLabel();
-		label.setBorder(new EmptyBorder(0, 20, 0, 0));
+		label.setBorder(new EmptyBorder(0, 10, 0, 0));
 		addChangeListener((ChangeEvent e) -> {
 			label.setText(getValueForLabel());
 		});
@@ -26,5 +26,9 @@ public class JLabeledSlider extends JSlider {
 
 	protected String getValueForLabel() {
 		return "" + getValue();
+	}
+
+	public void fireStateChangedExt() {
+		fireStateChanged();
 	}
 }

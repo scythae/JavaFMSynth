@@ -1,4 +1,4 @@
-package syn;
+package syn.operator;
 
 import java.awt.event.KeyEvent;
 import java.util.LinkedList;

@@ -1,4 +1,4 @@
-package syn.input;
+package application;
 
 import java.util.HashSet;
 

@@ -3,7 +3,6 @@ package syn.operator;
 import java.util.ArrayList;
 import java.util.List;
 
-import syn.Note;
 import utils.Utils;
 
 public class Operator {
