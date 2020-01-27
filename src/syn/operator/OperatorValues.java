@@ -12,4 +12,8 @@ public class OperatorValues {
 	public double frequencyLevel = 1;
 	public boolean frequencyFixed = false;
 	public volatile List<Operator> modulators = emptyOperatorList;
+	public double attack = 0.05;
+	public double decay = 0.05;
+	public double sustain = 1;
+	public double release = 0.1;
 }

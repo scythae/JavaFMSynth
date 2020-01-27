@@ -32,4 +32,8 @@ public class Utils {
 	public static void complain(String text) {
 		Log.out(text);
 	};
+
+	public static boolean doubleEquals(double a, double b) {
+		return Double.compare(a, b) == 0;
+	}
 }

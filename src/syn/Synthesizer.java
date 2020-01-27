@@ -3,24 +3,17 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
-import syn.input.TimeProvider;
 import syn.operator.Operator;
 
-public class Synthesizer implements TimeProvider{
+public class Synthesizer {
 	private MainWaveGenerator waveGenerator;
-	private NotesProvider notesProvider;
-	private double timeSeconds = 0.0;
 	private final List<Operator> emptyOperatorList = new ArrayList<>(0);
-
-	public volatile double gain = 1.0;
 	private final double defaultGain = 0.25;
+	public volatile double gain = 1.0;
 
-	public Synthesizer(NotesProvider notesProvider) {
-		this.notesProvider = notesProvider;
-		if (notesProvider == null)
-			notesProvider = () -> {return new LinkedList<>();};
-
+	public Synthesizer() {
 		waveGenerator = new MainWaveGenerator();
+		Operator.timeStep = SoundPlayer.sampleStepSeconds;
 		new SoundPlayer(waveGenerator);
 	}
 
@@ -36,13 +29,16 @@ public class Synthesizer implements TimeProvider{
 		waveGenerator.carriers = emptyOperatorList;
 	}
 
-	@Override
-	public double getTime() {
-		return timeSeconds;
-	}
-
 	public List<Double> getLastSamples() {
 		return waveGenerator.getLastSamples();
+	}
+
+	public void keyDown(int keyCode) {
+		waveGenerator.addNote(keyCode);
+	}
+
+	public void keyUp(int keyCode) {
+		waveGenerator.releaseNote(keyCode);
 	}
 
 	private class MainWaveGenerator implements WaveGenerator {
@@ -56,34 +52,36 @@ public class Synthesizer implements TimeProvider{
 				samplesStore.add(0.0);
 		}
 
+		public void addNote(int keyCode) {
+			List<Operator> tmpCarriers = carriers;
+			for (Operator op: tmpCarriers)
+				op.addNote(keyCode);
+		}
+
+		public void releaseNote(int keyCode) {
+			List<Operator> tmpCarriers = carriers;
+			for (Operator op: tmpCarriers)
+				op.releaseNote(keyCode);
+		}
+
 		@Override
 		public double getSampleValue() {
 			double result = 0;
 
-			List<Note> tmpNotes = notesProvider.getNotes();
-			for (Note note : tmpNotes)
-				result += getSampleValue(note);
+			List<Operator> tmpCarriers = carriers;
+			for (Operator op: tmpCarriers) {
+				result += op.getSampleValue();
 
-			result *= defaultGain * gain * getSampleValueReducer(tmpNotes.size());
+				op.removeFinishedNotes();
+				op.doTimeStep();
+			}
+
+			result *= defaultGain * gain * getSampleValueReducer(tmpCarriers.size());
 
 			synchronized (samplesStore) {
 				samplesStore.removeLast();
 				samplesStore.addFirst(result);
 			}
-
-			timeSeconds += SoundPlayer.sampleStepSeconds;
-
-			return result;
-		}
-
-		private double getSampleValue(Note note) {
-			double result = 0;
-
-			List<Operator> tmpCarriers = carriers;
-			for (Operator op: tmpCarriers)
-				result += op.getSampleValue(note);
-
-			result *= getSampleValueReducer(tmpCarriers.size());
 
 			return result;
 		}

@@ -33,6 +33,8 @@ public class JSliderScientific extends JLabeledSlider {
 
 		this.addMouseWheelListener((MouseWheelEvent e) -> {
 			float step = Math.abs(getMaximum() - getMinimum()) / 10000;
+			if (step < 1)
+				step = 1;
 
 			if (e.isControlDown() && e.isShiftDown())
 				step *= 1000;
@@ -40,8 +42,7 @@ public class JSliderScientific extends JLabeledSlider {
 				step *= 100;
 			else if (e.isShiftDown())
 				step *= 10;
-
-			if (step < 1)
+			else
 				step = 1;
 
 			setValue(getValue() + e.getWheelRotation() * Math.round(step));
@@ -49,7 +50,7 @@ public class JSliderScientific extends JLabeledSlider {
 	}
 
 	public void setExponent(double exponent) {
-		if (Double.compare(exponent, 0) == 0)
+		if (Utils.doubleEquals(exponent, 0))
 			Utils.complain("Exponent should have non-zero value.");
 		else
 			this.exponent = exponent;
@@ -80,7 +81,7 @@ public class JSliderScientific extends JLabeledSlider {
 
 	private void setNormalizedValue(double normalizedValue) {
 		if (normalizedValue < 0 || normalizedValue > 1) {
-			Utils.complain("Normalized value should be in a range between 0 and 1.");
+			Utils.complain("Normalized value should be in a range between 0 and 1. Value provided: " + normalizedValue);
 			return;
 		}
 

@@ -27,12 +27,14 @@ import javax.swing.event.TreeSelectionListener;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.TreePath;
 
+import syn.Note;
 import syn.Synthesizer;
 import syn.input.KeyInput;
 import syn.operator.Operator;
 import syn.operator.OperatorValues;
 import syn.operator.Oscillator;
 import syn.operator.Oscillators;
+import utils.LocalFactory;
 import utils.Utils;
 
 public class Application {
@@ -75,9 +77,11 @@ public class Application {
 			};
 		});
 
+		synthesizer = new Synthesizer();
+
 		keyInput = new KeyInput();
-		synthesizer = new Synthesizer(keyInput);
-		keyInput.setTimeProvider(synthesizer);
+		keyInput.onKeyDown = (keyCode) -> synthesizer.keyDown(keyCode);
+		keyInput.onKeyUp = (keyCode) -> synthesizer.keyUp(keyCode);
 
 		initUI();
 		initKeyBindings();
@@ -92,8 +96,10 @@ public class Application {
 		InputMap im = keyListener.getInputMap(JPanel.WHEN_IN_FOCUSED_WINDOW);
 		ActionMap am = keyListener.getActionMap();
 
+		Iterable<Integer> activeKeyCodes = Note.getKeyCodes();
+
 		for (boolean release : new boolean[] {false, true})
-			for (int keyCode : keyInput.getKeyCodes()) {
+			for (int keyCode : activeKeyCodes) {
 				Object key = new Object();
 				im.put(KeyStroke.getKeyStroke(keyCode, 0, release), key);
 				am.put(
@@ -197,18 +203,48 @@ public class Application {
 		panelOperatorValues.add(sliderFrequencyFixedLevel);
 		panelOperatorValues.add(sliderFrequencyFixedLevel.getLabel());
 
+		JSliderScientific sliderAttack = new JSliderScientific(
+			Operator.minAttack, Operator.maxAttack, Operator.minAttack, Math.E
+		);
+		panelOperatorValues.add(createLabel("Attack, seconds"));
+		panelOperatorValues.add(sliderAttack);
+		panelOperatorValues.add(sliderAttack.getLabel());
+
+		JSliderScientific sliderDecay = new JSliderScientific(
+			Operator.minDecay, Operator.maxDecay, Operator.minDecay, Math.E
+		);
+		panelOperatorValues.add(createLabel("Decay, seconds"));
+		panelOperatorValues.add(sliderDecay);
+		panelOperatorValues.add(sliderDecay.getLabel());
+
+		JSliderScientific sliderSustain = new JSliderScientific(
+			Operator.minSustain, Operator.maxSustain, Operator.minSustain, 1
+		);
+		panelOperatorValues.add(createLabel("Sustain, relative to level"));
+		panelOperatorValues.add(sliderSustain);
+		panelOperatorValues.add(sliderSustain.getLabel());
+
+		JSliderScientific sliderRelease = new JSliderScientific(
+			Operator.minRelease, Operator.maxRelease, Operator.minRelease, Math.E
+		);
+		panelOperatorValues.add(createLabel("Release, seconds"));
+		panelOperatorValues.add(sliderRelease);
+		panelOperatorValues.add(sliderRelease.getLabel());
+
 		JSliderScientific sliderCommonGainLevel = new JSliderScientific(
 			0, 4, 1, Math.E
 		);
+		sliderCommonGainLevel.setMinMax(0, 1000);
 		sliderCommonGainLevel.setValueSc(synthesizer.gain);
 		sliderCommonGainLevel.setRounding(3);
 		panelCommonValues.add(createLabel("Gain"));
 		panelCommonValues.add(sliderCommonGainLevel);
 		panelCommonValues.add(sliderCommonGainLevel.getLabel());
 
-
 		int gridRowHeight = 25;
 		setGridLayout(panelOperatorValues, 3, gridRowHeight);
+
+		panelCommonValues.setLocation(panelCommonValues.getX(), panelOperatorValues.getY() + panelOperatorValues.getHeight());
 		setGridLayout(panelCommonValues, 3, gridRowHeight);
 
 		btnAddOperator.addActionListener((actionEvent) ->
@@ -232,6 +268,20 @@ public class Application {
 		sliderDetune.addChangeListener((ChangeEvent e) ->
 			selectedOperator.setDetune(sliderDetune.getValueSc())
 		);
+
+		sliderAttack.addChangeListener((ChangeEvent e) ->
+			selectedOperator.setAttack(sliderAttack.getValueSc())
+		);
+		sliderDecay.addChangeListener((ChangeEvent e) ->
+			selectedOperator.setDecay(sliderDecay.getValueSc())
+		);
+		sliderSustain.addChangeListener((ChangeEvent e) ->
+			selectedOperator.setSustain(sliderSustain.getValueSc())
+		);
+		sliderRelease.addChangeListener((ChangeEvent e) ->
+			selectedOperator.setRelease(sliderRelease.getValueSc())
+		);
+
 		checkboxFixedFrequency.addChangeListener((ChangeEvent e) -> {
 			boolean fixed = checkboxFixedFrequency.isSelected();
 
@@ -277,7 +327,11 @@ public class Application {
 					sliderFrequencyProportionalLevel.setValueSc(values.frequencyLevel);
 
 				sliderDetune.setValueSc(values.detune);
-				checkboxFixedFrequency.setSelected(values.frequencyFixed);
+
+				sliderAttack.setValueSc(values.attack);
+				sliderDecay.setValueSc(values.decay);
+				sliderSustain.setValueSc(values.sustain);
+				sliderRelease.setValueSc(values.release);
 			}
 		});
 
@@ -317,11 +371,37 @@ public class Application {
 			}
 		};
 
+		LocalFactory<Operator> bellCarrier = () -> {
+			return new Operator().setAttack(0.015).setDecay(2).setSustain(0).setRelease(2);
+		};
+
+		LocalFactory<Operator> bellModulator = () -> {
+			return bellCarrier.create().setLevel(1).setFrequencyProportional(3.5);
+		};
+
+		TreePath rootPath = treeOperators.getSelectionPath();
+
 		treeOperators.setSelectionPath(new TreePath(
-			treeOperators.addToCurrentNode(new Operator().setLevel(0.5)).getPath()
+			treeOperators.addToCurrentNode(
+				bellCarrier.create().setDetune(-5)
+			).getPath()
 		));
 
-		treeOperators.addToCurrentNode(new Operator().setFrequencyFixed(2));
+		treeOperators.addToCurrentNode(
+			bellModulator.create().setDetune(-5)
+		);
+
+		treeOperators.setSelectionPath(rootPath);
+
+		treeOperators.setSelectionPath(new TreePath(
+			treeOperators.addToCurrentNode(
+				bellCarrier.create().setDetune(5)
+			).getPath()
+		));
+
+		treeOperators.addToCurrentNode(
+			bellModulator.create().setDetune(5)
+		);
 	}
 
 	private JLabel createLabel(String text) {
