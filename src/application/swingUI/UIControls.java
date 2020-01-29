@@ -16,13 +16,13 @@ import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.ChangeEvent;
 
-import syn.operator.Operator;
+import syn.operator.OperatorConsts;
 import syn.operator.OperatorValues;
 import syn.operator.Oscillator;
 import syn.operator.Oscillators;
 import utils.LocalFactory;
 
-public class SwingUI {
+public class UIControls {
 	public interface OnValueChanged<T> {
 		void execute(T value);
 	}
@@ -45,20 +45,20 @@ public class SwingUI {
 
 	private JPanel mainPane, panelWaveForm, panelADSR, panelCommonValues;
 
-	public SwingUI() {
+	public UIControls() {
 		comboboxOscillator = new JComboBox<>(new Oscillator[] {
 			Oscillators.Sine, Oscillators.Triangle, Oscillators.SawTooth,
 			Oscillators.SawToothInverted, Oscillators.Flat, Oscillators.Noise
 		});
 		comboboxOscillator.setFocusable(false);
 
-		sliderLevel = new JSliderScientific(Operator.minLevel, Operator.maxLevel, 1);
-		sliderDetune = new JSliderScientific(-Operator.maxDetune, Operator.maxDetune, 1);
+		sliderLevel = new JSliderScientific(OperatorConsts.minLevel, OperatorConsts.maxLevel, 1);
+		sliderDetune = new JSliderScientific(-OperatorConsts.maxDetune, OperatorConsts.maxDetune, 1);
 
-		sliderFrequencyProportional = new JSliderScientific(Operator.minProportionalFrequency, Operator.maxProportionalFrequency, 1);
-		sliderFrequencyProportional.setMinMax(Operator.minProportionalFrequency * 100, Operator.maxProportionalFrequency * 100);
+		sliderFrequencyProportional = new JSliderScientific(OperatorConsts.minProportionalFrequency, OperatorConsts.maxProportionalFrequency, 1);
+		sliderFrequencyProportional.setMinMax(OperatorConsts.minProportionalFrequency * 100, OperatorConsts.maxProportionalFrequency * 100);
 
-		sliderFrequencyFixed = new JSliderScientific(Operator.minFixedFrequency, Operator.maxFixedFrequency, 10);
+		sliderFrequencyFixed = new JSliderScientific(OperatorConsts.minFixedFrequency, OperatorConsts.maxFixedFrequency, 10);
 
 		checkboxFixedFrequency = new JCheckBox("Fixed, Hz");
 		checkboxFixedFrequency.setHorizontalAlignment(SwingConstants.RIGHT);
@@ -66,10 +66,10 @@ public class SwingUI {
 		checkboxFixedFrequency.setFocusable(false);
 		padRight(checkboxFixedFrequency);
 
-		sliderAttack = new JSliderScientific(Operator.minAttack, Operator.maxAttack, Math.E);
-		sliderDecay = new JSliderScientific(Operator.minDecay, Operator.maxDecay, Math.E);
-		sliderSustain = new JSliderScientific(Operator.minSustain, Operator.maxSustain, 1);
-		sliderRelease = new JSliderScientific(Operator.minRelease, Operator.maxRelease, Math.E);
+		sliderAttack = new JSliderScientific(OperatorConsts.minAttack, OperatorConsts.maxAttack, Math.E);
+		sliderDecay = new JSliderScientific(OperatorConsts.minDecay, OperatorConsts.maxDecay, Math.E);
+		sliderSustain = new JSliderScientific(OperatorConsts.minSustain, OperatorConsts.maxSustain, 1);
+		sliderRelease = new JSliderScientific(OperatorConsts.minRelease, OperatorConsts.maxRelease, Math.E);
 
 		sliderGain = new JSliderScientific(0, 4, Math.E);
 		sliderGain.setMinMax(0, 1000);

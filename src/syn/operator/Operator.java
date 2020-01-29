@@ -1,33 +1,23 @@
 package syn.operator;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.ArrayList;
-import java.util.List;
 
-import utils.Log;
 import utils.Utils;
 
-public class Operator {
-	public static final double minLevel = 0;
-	public static final double maxLevel = 1;
-	public static final int maxDetune = 50;
-	public static final int minFixedFrequency = 0;
-	public static final int maxFixedFrequency = 20000;
-	public static final int minProportionalFrequency = 0;
-	public static final int maxProportionalFrequency = 32;
-	public static final int minAttack = 0;
-	public static final int maxAttack = 2;
-	public static final int minDecay = 0;
-	public static final int maxDecay = 2;
-	public static final int minSustain = 0;
-	public static final int maxSustain = 1;
-	public static final int minRelease = 0;
-	public static final int maxRelease = 5;
+
+public class Operator extends Algorithm {
+	public static double timeStep = 0;
+	private volatile ArrayList<Note> notes = new ArrayList<>(0);
 
 	private OperatorValues values = new OperatorValues();
 	private boolean isModulator = false;
-	private volatile List<Note> notes = new ArrayList<>(0);
 
-	public static double timeStep = 0;
+	public Operator() {
+		notes = new ArrayList<>(0);
+	}
 
 	private double getSampleValue(Note note) {
 		/* Value of carrier, modulated by modulator:
@@ -42,11 +32,9 @@ public class Operator {
 		double angularFrequency = frequency * Utils.doublePi;
 
 		double modulation = 0;
-		List<Operator> modulators = values.modulators;
-		for (Operator modulator : modulators)
+		for (Operator modulator : getOperators())
 			modulation += modulator.getSampleValue(note);
 
-		Log.out(modulation);
 		double phase = angularFrequency * (note.timeSinceHit + modulation);
 		double result = values.oscillator.getSampleValue(phase) * values.level * getADSREnvelope(note);
 		if (isModulator)
@@ -81,19 +69,26 @@ public class Operator {
 	};
 
 	public double getSampleValue() {
-		List<Note> tmpNotes = notes;
 		double result = 0;
-
-		for (Note note : tmpNotes)
+		for (Note note : notes)
 			result += getSampleValue(note);
 
 		return result;
 	};
 
+	@Override
+	public Algorithm addOperator(Operator operator) {
+		if (operator != null)
+			operator.isModulator = true;
+
+		return super.addOperator(operator);
+	};
+
+	@Override
 	public void addNote(int keyCode) {
 		Note note = new Note(keyCode);
 
-		List<Note> tmpNotes;
+		ArrayList<Note> tmpNotes;
 		synchronized (notes) {
 			tmpNotes = new ArrayList<>(notes.size() + 1);
 			tmpNotes.add(note);
@@ -103,9 +98,9 @@ public class Operator {
 		notes = tmpNotes;
 	};
 
+	@Override
 	public void releaseNote(int keyCode) {
-		List<Note> tmpNotes = notes;
-		for (Note note : tmpNotes)
+		for (Note note : notes)
 			if (note.keyCode == keyCode) {
 				note.released = true;
 				break;
@@ -113,8 +108,7 @@ public class Operator {
 	};
 
 	public void doTimeStep() {
-		List<Note> tmpNotes = notes;
-		for (Note note : tmpNotes) {
+		for (Note note : notes) {
 			note.timeSinceHit += timeStep;
 
 			if (note.released)
@@ -123,14 +117,13 @@ public class Operator {
 	};
 
 	public void removeFinishedNotes() {
-		List<Note> tmpNotes = notes;
-		for (Note note : tmpNotes)
+		for (Note note : notes)
 			if (note.released && note.timeSinceReleased > values.release)
 				removeNote(note);
 	};
 
 	private void removeNote(Note note) {
-		List<Note> tmpNotes;
+		ArrayList<Note> tmpNotes;
 
 		synchronized (notes) {
 			tmpNotes = new ArrayList<>(notes.size());
@@ -142,6 +135,22 @@ public class Operator {
 		notes = tmpNotes;
 	};
 
+	public void setValues(OperatorValues sourceValues) {
+		setOscillator(sourceValues.oscillator);
+		setLevel(sourceValues.level);
+		setDetune(sourceValues.detune);
+		if (sourceValues.frequencyFixed)
+			setFrequencyFixed(sourceValues.frequencyLevel);
+		else
+			setFrequencyProportional(sourceValues.frequencyLevel);
+
+		setAttack(sourceValues.attack);
+		setDecay(sourceValues.decay);
+		setSustain(sourceValues.sustain);
+		setRelease(sourceValues.release);
+	};
+
+
 	public Operator setOscillator(Oscillator oscillator) {
 		if (oscillator == null)
 			Utils.complain("Operator requires non-null oscillator.");
@@ -151,39 +160,22 @@ public class Operator {
 		return this;
 	};
 
-	public synchronized Operator addModulator(Operator modulator) {
-		List<Operator> modulators = new ArrayList<>(values.modulators.size() + 1);
-		modulators.addAll(values.modulators);
-
-		if (modulator != null) {
-			modulator.isModulator = true;
-			modulators.add(modulator);
-		}
-		values.modulators = modulators;
-
-		return this;
-	};
-
-	public synchronized void cleanModulators() {
-		values.modulators = OperatorValues.emptyOperatorList;
-	};
-
 	public Operator setLevel(double value) {
-		if (checkRange(value, minLevel, maxLevel, "level", ""))
+		if (checkRange(value, OperatorConsts.minLevel, OperatorConsts.maxLevel, "level", ""))
 			values.level = value;
 
 		return this;
 	};
 
 	public Operator setDetune(double value) {
-		if (checkRange(value, -maxDetune, maxDetune, "detune", "Hz"))
+		if (checkRange(value, -OperatorConsts.maxDetune, OperatorConsts.maxDetune, "detune", "Hz"))
 			values.detune = value;
 
 		return this;
 	};
 
 	public Operator setFrequencyFixed(double value) {
-		if (checkRange(value, minFixedFrequency, maxFixedFrequency, "fixed frequency", "Hz")) {
+		if (checkRange(value, OperatorConsts.minFixedFrequency, OperatorConsts.maxFixedFrequency, "fixed frequency", "Hz")) {
 			values.frequencyLevel = value;
 			values.frequencyFixed = true;
 		}
@@ -192,7 +184,7 @@ public class Operator {
 	};
 
 	public Operator setFrequencyProportional(double value) {
-		if (checkRange(value, minProportionalFrequency, maxProportionalFrequency, "proportional frequency", "times")) {
+		if (checkRange(value, OperatorConsts.minProportionalFrequency, OperatorConsts.maxProportionalFrequency, "proportional frequency", "times")) {
 			values.frequencyLevel = value;
 			values.frequencyFixed = false;
 		}
@@ -201,34 +193,34 @@ public class Operator {
 	};
 
 	public Operator setAttack(double value) {
-		if (checkRange(value, minAttack, maxAttack, "attack", "seconds"))
+		if (checkRange(value, OperatorConsts.minAttack, OperatorConsts.maxAttack, "attack", "seconds"))
 			values.attack = value;
 
 		return this;
 	};
 
 	public Operator setDecay(double value) {
-		if (checkRange(value, minDecay, maxDecay, "decay", "seconds"))
+		if (checkRange(value, OperatorConsts.minDecay, OperatorConsts.maxDecay, "decay", "seconds"))
 			values.decay = value;
 
 		return this;
 	};
 
 	public Operator setSustain(double value) {
-		if (checkRange(value, minSustain, maxSustain, "sustain", ""))
+		if (checkRange(value, OperatorConsts.minSustain, OperatorConsts.maxSustain, "sustain", ""))
 			values.sustain = value;
 
 		return this;
 	};
 
 	public Operator setRelease(double value) {
-		if (checkRange(value, minRelease, maxRelease, "release", "seconds"))
+		if (checkRange(value, OperatorConsts.minRelease, OperatorConsts.maxRelease, "release", "seconds"))
 			values.release = value;
 
 		return this;
 	};
 
-	public boolean checkRange(double paramValue, double min, double max, String paramName, String measureUnit) {
+	private boolean checkRange(double paramValue, double min, double max, String paramName, String measureUnit) {
 		if (paramValue < min || paramValue > max) {
 			String complainMessage = String.format(
 				"Operator's %s should be in a range between %s %s and %s %s. Value provided: %s.",
@@ -249,8 +241,6 @@ public class Operator {
 		result.frequencyLevel = values.frequencyLevel;
 		result.level = values.level;
 		result.oscillator = values.oscillator;
-		result.modulators = new ArrayList<>(values.modulators);
-
 		result.attack = values.attack;
 		result.decay = values.decay;
 		result.sustain = values.sustain;
@@ -266,4 +256,38 @@ public class Operator {
 		else
 			return "Carrier";
 	}
+
+	private static final long serialVersionUID = -2968290946211356242L;
+	@Override
+	public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+		isModulator = in.readBoolean();
+		values.level = in.readDouble();
+		values.detune = in.readDouble();
+		values.frequencyLevel = in.readDouble();
+		values.frequencyFixed = in.readBoolean();
+		values.attack = in.readDouble();
+		values.decay = in.readDouble();
+		values.sustain = in.readDouble();
+		values.release = in.readDouble();
+		String oscillatorName = (String) in.readObject();
+		values.oscillator = Oscillators.getByName(oscillatorName);
+
+		super.readExternal(in);
+	}
+
+	@Override
+	public void writeExternal(ObjectOutput out) throws IOException {
+		out.writeBoolean(isModulator);
+		out.writeDouble(values.level);
+		out.writeDouble(values.detune);
+		out.writeDouble(values.frequencyLevel);
+		out.writeBoolean(values.frequencyFixed);
+		out.writeDouble(values.attack);
+		out.writeDouble(values.decay);
+		out.writeDouble(values.sustain);
+		out.writeDouble(values.release);
+		out.writeObject(values.oscillator.toString());
+
+		super.writeExternal(out);
+	};
 }

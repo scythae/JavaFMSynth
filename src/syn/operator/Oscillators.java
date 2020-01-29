@@ -97,4 +97,16 @@ public class Oscillators {
 	private static double getNormalizedPhase(double phase) {
 		return phase - (Utils.doublePi * (int) (phase / Utils.doublePi));
 	}
+
+	public static Oscillator getByName(String oscillatorName) {
+		Oscillator result = null;
+		try {
+			result = (Oscillator) Oscillators.class.getField(oscillatorName).get(null);
+		} catch (Exception e) {
+			e.printStackTrace();
+			Utils.complain("Cannot find oscillator with this name: " + oscillatorName);
+		}
+
+		return result;
+	}
 }

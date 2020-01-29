@@ -1,5 +1,8 @@
 
 
 public class ToDo {
-//	private int newStuffToDo;
+	private int selfCircuitedModulators;
+	private int savingLoadingSounds;
+	private int editValueInTextBoxes;
+	private int flexibleAdjustmentOfOperators;
 }
