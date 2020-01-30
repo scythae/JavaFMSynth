@@ -2,7 +2,7 @@ package syn.operator;
 
 import utils.LocalFactory;
 
-public class DefaultAlgorithms {
+public class AlgorithmBank {
 	public static final Algorithm TubularBell;
 
 	static {

@@ -1,15 +1,14 @@
-package application;
+package application.input;
 
 import java.util.HashSet;
 
-public class KeyInput {
+import application.input.KeyInputHandler.OnKeyInput;
+
+public class KeysRepetitionFilter {
 	private HashSet<Integer> pressedKeys = new HashSet<>();
 
-	public interface KeyInputHandler {
-		void execute(int keyCode);
-	}
-	public KeyInputHandler onKeyDown;
-	public KeyInputHandler onKeyUp;
+	public OnKeyInput onKeyDown;
+	public OnKeyInput onKeyUp;
 
 	public void keyDown(int keyCode) {
 		synchronized (pressedKeys) {

@@ -4,7 +4,6 @@ import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.SourceDataLine;
 
-import application.Application;
 import utils.Utils;
 
 class SoundPlayer {
@@ -18,16 +17,22 @@ class SoundPlayer {
 	static final double sampleStepSeconds = 1.0 / samplesPerSecond;
 
 	private SoundPlayerThread thread;
+	private boolean running;
 
-	public SoundPlayer(WaveGenerator waveGenerator) {
+	SoundPlayer(WaveGenerator waveGenerator) {
 		if (waveGenerator == null) {
 			Utils.complain("SoundPlayer requires non-null waveGenerator.");
 			return;
 		}
 
+		running = true;
 		thread = new SoundPlayerThread();
 		thread.waveGenerator = waveGenerator;
 		thread.start();
+	}
+
+	void stop() {
+		running = false;
 	}
 
 	private class SoundPlayerThread extends Thread {
@@ -53,7 +58,7 @@ class SoundPlayer {
 			int fillingThreshold = line.available() - samplesPerBuffer;
 
 			try {
-				while (Application.isRunning()) {
+				while (running) {
 					boolean lineIsFull = line.available() < fillingThreshold;
 					if (lineIsFull) {
 						Thread.sleep(1);

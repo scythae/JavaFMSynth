@@ -49,12 +49,20 @@ public class Utils {
 	}
 
 	public static void saveObjectToFile(String fileName, Object obj) {
-		try {
-			File file = new File(fileName);
-			new File(file.getParent()).mkdirs();
+		File file;
 
+		try {
+			file = new File(fileName);
+			new File(file.getParent()).mkdirs();
 			file.delete();
 			file.createNewFile();
+		} catch (Exception e) {
+			e.printStackTrace();
+			complain("Cannot create file: " + fileName);
+			return;
+		}
+
+		try {
 			FileOutputStream fos = new FileOutputStream(file);
 			ObjectOutputStream oos = new ObjectOutputStream(fos);
 			oos.writeObject(obj);
@@ -62,21 +70,33 @@ public class Utils {
 			fos.close();
 		} catch (IOException e) {
 			e.printStackTrace();
-			complain("Cannot save object to file " + fileName);
+			complain("Cannot save object to file: " + fileName);
 		}
 	};
 
 	public static Object loadObjectFromFile(String fileName) {
+		File file;
+
+		String complainMessage = "Cannot find file: " + fileName;
+		try {
+			file = new File(fileName);
+			if (!file.exists())
+				throw new Exception("File doesn't exist.");
+		} catch (Exception e) {
+			complain(complainMessage + System.lineSeparator() + e.getMessage());
+			return null;
+		}
+
 		Object result = null;
 		try {
-			FileInputStream fis = new FileInputStream(fileName);
+			FileInputStream fis = new FileInputStream(file);
 			ObjectInputStream ois = new ObjectInputStream(fis);
 			result = ois.readObject();
 			ois.close();
 			fis.close();
 		} catch (IOException | ClassNotFoundException e) {
 			e.printStackTrace();
-			complain("Cannot load object from file " + fileName);
+			complain("Cannot load object from file: " + fileName);
 		}
 
 		return result;

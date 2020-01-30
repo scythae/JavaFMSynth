@@ -4,22 +4,34 @@ import java.util.LinkedList;
 import java.util.List;
 
 import syn.operator.Algorithm;
+import syn.operator.AlgorithmBank;
 import syn.operator.Operator;
+import utils.Paths;
 
 public class Synthesizer {
 	private MainWaveGenerator waveGenerator;
+	private SoundPlayer soundPlayer;
+
 	private final double defaultGain = 0.25;
 	public volatile double gain = 1.0;
-	public volatile Algorithm algorithm = new Algorithm();
+	public volatile Algorithm algorithm;
 
 	public Synthesizer() {
-		waveGenerator = new MainWaveGenerator();
 		Operator.timeStep = SoundPlayer.sampleStepSeconds;
-		new SoundPlayer(waveGenerator);
+
+		waveGenerator = new MainWaveGenerator();
+		soundPlayer = new SoundPlayer(waveGenerator);
+
+		load();
 	}
 
 	public List<Double> getLastSamples() {
 		return waveGenerator.getLastSamples();
+	}
+
+	public void close() {
+		save();
+		soundPlayer.stop();
 	}
 
 	private class MainWaveGenerator implements WaveGenerator {
@@ -70,5 +82,15 @@ public class Synthesizer {
 
 			return result;
 		}
+	}
+
+	private void save() {
+		algorithm.saveToFile(Paths.lastAlgorithm);
+	}
+
+	private void load() {
+		algorithm = Algorithm.loadFromFile(Paths.lastAlgorithm);
+		if (algorithm == null)
+			algorithm = AlgorithmBank.TubularBell;
 	}
 }

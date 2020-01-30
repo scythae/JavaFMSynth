@@ -1,8 +1,10 @@
-package application;
+package application.swingUI;
 
+import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Point;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.JPanel;
@@ -10,12 +12,12 @@ import javax.swing.JPanel;
 import syn.Synthesizer;
 import utils.Utils;
 
-public class WaveViewer extends JPanel {
+public class JWaveViewer extends JPanel {
 	private static final long serialVersionUID = -8481038351597037986L;
 	private static final int repaintIntervalMs = 10;
-	private List<Double> lastSamples;
+	private List<Double> lastSamples = new ArrayList<>(0);
 
-	WaveViewer (Synthesizer synthCore) {
+	public JWaveViewer (Synthesizer synthCore) {
 		lastSamples = synthCore.getLastSamples();
 		Utils.startTimer(
 				"WaveViewer repaint",
@@ -43,12 +45,23 @@ public class WaveViewer extends JPanel {
 		int x = 0;
 		lineEnd.setLocation(0, halfHeight * (1.0 - lastSamples.get(0)));
 
+		boolean gotOverload = false;
 		for (double sample : lastSamples) {
 			lineBegin.setLocation(lineEnd);
 			lineEnd.setLocation(x++, halfHeight * (1.0 - sample));
 			g.drawLine(lineBegin.x, lineBegin.y, lineEnd.x, lineEnd.y);
 
-			if (x >= width);
+			if (sample > 1)
+				gotOverload = true;
+
+			if (x >= width)
+				break;
+		}
+
+		if (gotOverload) {
+			Color transparentRed = new Color(1.0f, 0.8f, 0.8f, 0.2f);
+			g.setColor(transparentRed);
+			g.fillRect(0, 0, getWidth(), getHeight());
 		}
 	}
 }

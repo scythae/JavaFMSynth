@@ -34,9 +34,11 @@ public class UIAlgorithmTreeView extends UIAlgorithm {
 		panelButtons.setLayout(new GridLayout(1, 2));
 
 		JButton btnAddOperator = new JButton("Add");
+		btnAddOperator.setFocusable(false);
 		panelButtons.add(btnAddOperator);
 
 		JButton btnRemoveOperator = new JButton("Remove");
+		btnRemoveOperator.setFocusable(false);
 		panelButtons.add(btnRemoveOperator);
 
 		panelButtons.setSize(panelButtons.getWidth(), btnAddOperator.getHeight());
@@ -100,6 +102,8 @@ public class UIAlgorithmTreeView extends UIAlgorithm {
 	public void setAlgorithm(Algorithm algorithm) {
 		this.algorithm = algorithm;
 		refresh();
+
+		tree.selectNode((DefaultMutableTreeNode) tree.getRoot().getFirstChild());
 	}
 
 	@Override
