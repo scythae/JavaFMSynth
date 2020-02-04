@@ -10,7 +10,9 @@ import utils.Utils;
 
 public class Operator extends Algorithm {
 	public static double timeStep = 0;
-	private volatile ArrayList<Note> notes = new ArrayList<>(0);
+	private static final ArrayList<Note> emptyNoteList = new ArrayList<>(0);
+
+	private volatile ArrayList<Note> notes = emptyNoteList;
 
 	private OperatorValues values = new OperatorValues();
 	private boolean isModulator = false;
@@ -38,7 +40,7 @@ public class Operator extends Algorithm {
 		double phase = angularFrequency * (note.timeSinceHit + modulation);
 		double result = values.oscillator.getSampleValue(phase) * values.level * getADSREnvelope(note);
 		if (isModulator)
-			result = result / angularFrequency;
+			result = angularFrequency == 0 ? 0 : result / angularFrequency;
 
 		return result;
 	};
@@ -134,6 +136,10 @@ public class Operator extends Algorithm {
 
 		notes = tmpNotes;
 	};
+
+	void removeAllNotes() {
+		notes = emptyNoteList;
+	}
 
 	public void setValues(OperatorValues sourceValues) {
 		setOscillator(sourceValues.oscillator);

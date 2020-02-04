@@ -1,11 +1,14 @@
 package utils;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.Serializable;
 
 public class Utils {
 	public final static double doublePi = 2.0 * Math.PI;
@@ -48,7 +51,7 @@ public class Utils {
 		return Double.compare(a, b) == 0;
 	}
 
-	public static void saveObjectToFile(String fileName, Object obj) {
+	public static void saveObjectToFile(Object obj, String fileName) {
 		File file;
 
 		try {
@@ -63,11 +66,11 @@ public class Utils {
 		}
 
 		try {
-			FileOutputStream fos = new FileOutputStream(file);
-			ObjectOutputStream oos = new ObjectOutputStream(fos);
-			oos.writeObject(obj);
-			oos.close();
-			fos.close();
+			FileOutputStream fileOut = new FileOutputStream(file);
+			ObjectOutputStream objOut = new ObjectOutputStream(fileOut);
+			objOut.writeObject(obj);
+			objOut.close();
+			fileOut.close();
 		} catch (IOException e) {
 			e.printStackTrace();
 			complain("Cannot save object to file: " + fileName);
@@ -89,14 +92,39 @@ public class Utils {
 
 		Object result = null;
 		try {
-			FileInputStream fis = new FileInputStream(file);
-			ObjectInputStream ois = new ObjectInputStream(fis);
-			result = ois.readObject();
-			ois.close();
-			fis.close();
+			FileInputStream fileIn = new FileInputStream(file);
+			ObjectInputStream objIn = new ObjectInputStream(fileIn);
+			result = objIn.readObject();
+			objIn.close();
+			fileIn.close();
 		} catch (IOException | ClassNotFoundException e) {
 			e.printStackTrace();
 			complain("Cannot load object from file: " + fileName);
+		}
+
+		return result;
+	};
+
+	@SuppressWarnings("unchecked")
+	public static <T extends Serializable> T clone(T source) {
+		T result = null;
+
+		ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
+
+		try {
+			ObjectOutputStream objOut = new ObjectOutputStream(byteOut);
+			objOut.writeObject(source);
+			objOut.close();
+
+			ByteArrayInputStream byteIn = new ByteArrayInputStream(byteOut.toByteArray());
+
+			ObjectInputStream objIn = new ObjectInputStream(byteIn);
+			result = (T) objIn.readObject();
+			objIn.close();
+		} catch (IOException | ClassNotFoundException e) {
+			e.printStackTrace();
+			complain("Cannot clone the object.");
+			return null;
 		}
 
 		return result;
@@ -107,5 +135,9 @@ public class Utils {
 			return targetClass.cast(obj);
 
 		return null;
+	}
+
+	public static String removeFileExtension (String fileName) {
+		return fileName.substring(0, fileName.lastIndexOf("."));
 	}
 }

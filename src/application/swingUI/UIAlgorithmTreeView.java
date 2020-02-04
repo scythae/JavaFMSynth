@@ -3,9 +3,11 @@ package application.swingUI;
 import java.awt.BorderLayout;
 import java.awt.GridLayout;
 
+import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -13,6 +15,7 @@ import javax.swing.tree.TreeNode;
 
 import syn.operator.Algorithm;
 import syn.operator.Operator;
+import utils.LocalFactory;
 import utils.Utils;
 
 public class UIAlgorithmTreeView extends UIAlgorithm {
@@ -24,22 +27,28 @@ public class UIAlgorithmTreeView extends UIAlgorithm {
 	public UIAlgorithmTreeView() {
 		mainContainer = new JPanel();
 		mainContainer.setLayout(new BorderLayout());
+		mainContainer.setBorder(BorderFactory.createTitledBorder("Operators"));
 
 		tree = new JTreeExt("Synth");
 		tree.setFocusable(false);
 		tree.setCollapsable(false);
-		mainContainer.add(tree, BorderLayout.CENTER);
+
+		JScrollPane treeScroller = new JScrollPane(tree);
+		mainContainer.add(treeScroller, BorderLayout.CENTER);
 
 		JPanel panelButtons = new JPanel();
 		panelButtons.setLayout(new GridLayout(1, 2));
 
-		JButton btnAddOperator = new JButton("Add");
-		btnAddOperator.setFocusable(false);
-		panelButtons.add(btnAddOperator);
+		LocalFactory<JButton> btnFactory = (args) -> {
+			String caption = (String) args[0];
+			JButton btn = new JButton(caption);
+			btn.setFocusable(false);
+			panelButtons.add(btn);
+			return btn;
+		};
 
-		JButton btnRemoveOperator = new JButton("Remove");
-		btnRemoveOperator.setFocusable(false);
-		panelButtons.add(btnRemoveOperator);
+		JButton btnRemoveOperator = btnFactory.create("Remove");
+		JButton btnAddOperator = btnFactory.create("Add");
 
 		panelButtons.setSize(panelButtons.getWidth(), btnAddOperator.getHeight());
 
@@ -85,6 +94,8 @@ public class UIAlgorithmTreeView extends UIAlgorithm {
 					onOperatorSelected.execute(operator);
 			}
 		});
+
+		setAlgorithm(new Algorithm());
 	}
 
 	private Algorithm getNodeAlgorithm(TreeNode node) {
@@ -103,7 +114,8 @@ public class UIAlgorithmTreeView extends UIAlgorithm {
 		this.algorithm = algorithm;
 		refresh();
 
-		tree.selectNode((DefaultMutableTreeNode) tree.getRoot().getFirstChild());
+		if (tree.getRoot().getChildCount() > 0)
+			tree.selectNode((DefaultMutableTreeNode) tree.getRoot().getFirstChild());
 	}
 
 	@Override

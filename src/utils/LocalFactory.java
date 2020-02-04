@@ -1,5 +1,5 @@
 package utils;
 
 public interface LocalFactory<T> {
-	T create();
+	T create(Object... args);
 }

@@ -39,11 +39,11 @@ public class JSliderScientific extends JLabeledSlider {
 			if (e.isControlDown() && e.isShiftDown())
 				step *= 1000;
 			else if (e.isControlDown())
-				step *= 100;
+				step = 1;
 			else if (e.isShiftDown())
 				step *= 10;
 			else
-				step = 1;
+				step *= 100;
 
 			setValue(getValue() + e.getWheelRotation() * Math.round(step));
 		});

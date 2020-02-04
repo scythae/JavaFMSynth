@@ -77,7 +77,7 @@ public class UIControls {
 
 		mainPane = new JPanel();
 
-		LocalFactory<JPanel> panel = () -> {
+		LocalFactory<JPanel> panel = (args) -> {
 			JPanel result = new JPanel();
 			mainPane.add(result);
 			return result;

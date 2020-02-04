@@ -4,25 +4,19 @@ import java.util.LinkedList;
 import java.util.List;
 
 import syn.operator.Algorithm;
-import syn.operator.AlgorithmBank;
 import syn.operator.Operator;
-import utils.Paths;
+import utils.Utils;
 
 public class Synthesizer {
 	private MainWaveGenerator waveGenerator;
 	private SoundPlayer soundPlayer;
-
-	private final double defaultGain = 0.25;
-	public volatile double gain = 1.0;
-	public volatile Algorithm algorithm;
+	private Patch patch = new Patch();
 
 	public Synthesizer() {
 		Operator.timeStep = SoundPlayer.sampleStepSeconds;
 
 		waveGenerator = new MainWaveGenerator();
 		soundPlayer = new SoundPlayer(waveGenerator);
-
-		load();
 	}
 
 	public List<Double> getLastSamples() {
@@ -30,11 +24,37 @@ public class Synthesizer {
 	}
 
 	public void close() {
-		save();
 		soundPlayer.stop();
 	}
 
+	public void pressNote(int keyCode) {
+		getAlgorithm().addNote(keyCode);
+	}
+
+	public void releaseNote(int keyCode) {
+		getAlgorithm().releaseNote(keyCode);
+	}
+
+	public Algorithm getAlgorithm() {
+		return patch.algorithm;
+	}
+
+	public void setPatch(Patch newPatch) {
+		if (newPatch == null) {
+			Utils.complain("Patch for synthesizer shouldn't have null value.");
+			return;
+		}
+
+		getAlgorithm().reset();
+		patch = newPatch;
+	}
+
+	public Patch getPatch() {
+		return patch;
+	}
+
 	private class MainWaveGenerator implements WaveGenerator {
+		private final double defaultGain = 0.25;
 		private static final int sampleStoreSize = 2000;
 		private LinkedList<Double> samplesStore = new LinkedList<Double>();
 
@@ -45,20 +65,20 @@ public class Synthesizer {
 
 		@Override
 		public double getSampleValue() {
-			if (algorithm == null)
+			if (patch.algorithm == null)
 				return 0;
 
 			double result = 0;
 			int carriersCount = 0;
 
-			for (Operator op: algorithm.getOperators()) {
+			for (Operator op: getAlgorithm().getOperators()) {
 				result += op.getSampleValue();
 				carriersCount++;
 				op.removeFinishedNotes();
 				op.doTimeStep();
 			}
 
-			result *= defaultGain * gain * getSampleValueReducer(carriersCount);
+			result *= defaultGain * patch.gain * getSampleValueReducer(carriersCount);
 
 			synchronized (samplesStore) {
 				samplesStore.removeLast();
@@ -82,15 +102,5 @@ public class Synthesizer {
 
 			return result;
 		}
-	}
-
-	private void save() {
-		algorithm.saveToFile(Paths.lastAlgorithm);
-	}
-
-	private void load() {
-		algorithm = Algorithm.loadFromFile(Paths.lastAlgorithm);
-		if (algorithm == null)
-			algorithm = AlgorithmBank.TubularBell;
 	}
 }

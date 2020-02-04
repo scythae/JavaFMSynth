@@ -68,8 +68,13 @@ public class Algorithm implements Externalizable {
 			op.releaseNote(keyCode);
 	}
 
+	public void reset() {
+		for (Operator op: operators)
+			op.removeAllNotes();
+	}
+
 	public void saveToFile(String fileName) {
-		Utils.saveObjectToFile(fileName, this);
+		Utils.saveObjectToFile(this, fileName);
 	};
 
 	public static Algorithm loadFromFile(String fileName) {
